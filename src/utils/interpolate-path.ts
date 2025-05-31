@@ -465,9 +465,23 @@ export type {
   ValidationResult
 };
 
+function includeLastOnly(pathA: string, pathB: string): InterpolatorOptions {
+  // Get the minimum length between both paths to ensure valid index
+  const interpolator = new PathInterpolator();
+  const parsedA = interpolator.parsePath(pathA);
+  const parsedB = interpolator.parsePath(pathB);
+  const minLength = Math.min(parsedA.commands.length, parsedB.commands.length);
+  const lastIndex = minLength - 1;
+
+  return {
+    include: [lastIndex]
+  };
+}
+
 export {
   PathInterpolator,
   interpolatePath,
   animatePath,
+  includeLastOnly,
   Easing
 };

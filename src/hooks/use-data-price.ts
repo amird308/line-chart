@@ -103,7 +103,10 @@ export function usePriceData({ symbol = 'BTCUSDT' }: UsePriceDataProps): UsePric
                 price: price
               };
               const updatedData = [...prevData, newDataPoint];
-              return updatedData.slice(-600);
+              if(updatedData.length >= 600) {
+                return updatedData.slice(-200);
+              }
+              return updatedData;
             });
           }
         } catch (parseError) {
