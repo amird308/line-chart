@@ -34,6 +34,15 @@ export function useChart({ data }: UseD3ChartProps) {
       return { xScale, yScale };
   }, [data]);
 
+  const lineGenerator = useMemo(() => {
+    if (!scales) return null;
+    
+    return d3.line<PriceData>()
+      .x(d => scales.xScale(new Date(d.timestamp)))
+      .y(d => scales.yScale(d.price))
+      .curve(d3.curveBasis);
+  }, [scales]);
+
   const initializeChart = useCallback(() => {
     if (!svgRef.current || !scales) return;
 
@@ -130,7 +139,80 @@ export function useChart({ data }: UseD3ChartProps) {
 
 
   const updateChart = useCallback(() => {
+    if (!svgRef.current || !initializedRef.current || !scales || !lineGenerator || data.length < 2) return;
+
+    const svg = d3.select(svgRef.current);
+    const container = svg.select('g');
+
+    const latestPoint = data[data.length - 1];
+
+    const t = d3.transition().duration(1000).ease(d3.easeLinear);
+
+    const priceExtent = d3.extent(data, d => d.price) as [number, number];
+    const timeExtent = d3.extent(data, d => new Date(d.timestamp)) as [Date, Date];
+    const priceRange = priceExtent[1] - priceExtent[0];
+    const timePadding = (timeExtent[1].getTime() - timeExtent[0].getTime()) * 0.05;
+
+    scales.xScale.domain([timeExtent[0], new Date(timeExtent[1].getTime() + timePadding)]);
+    scales.yScale.domain([
+      priceExtent[0] - priceRange * 0.1,
+      priceExtent[1] + priceRange * 0.1
+    ]);
+
+    const currentPriceY = scales.yScale(latestPoint.price);
     
+    container.select('.red-zone')
+      .transition(t)
+      .attr('height', currentPriceY);
+
+    container.select('.green-zone')
+      .transition(t)
+      .attr('y', currentPriceY)
+      .attr('height', 600 - currentPriceY);
+
+    container.select('.current-price-line')
+      .transition(t)
+      .attr('y1', currentPriceY)
+      .attr('y2', currentPriceY);
+
+    // axes
+    const yAxisGenerator = d3.axisRight(scales.yScale)
+      .ticks(8)
+      .tickFormat(d => `$${d3.format(',.5f')(d as number)}`);
+    
+    const yAxisSel = container.select<SVGGElement>('.y-axis');
+    (yAxisSel)
+      .transition(t)
+      .call(yAxisGenerator);
+    yAxisSel.selectAll('text').attr('fill', '#9ca3af').attr('font-size', '12px');
+    yAxisSel.selectAll('line').attr('stroke', '#374151').attr('stroke-opacity', 0.5);
+
+    const xAxisGenerator = d3.axisBottom(scales.xScale)
+      .ticks(6)
+      .tickFormat(d => d3.timeFormat('%H:%M:%S')(d as Date));
+    
+    const xAxisSel = container.select<SVGGElement>('.x-axis');
+    (xAxisSel)
+      .transition(t)
+      .call(xAxisGenerator);
+    xAxisSel.selectAll('text').attr('fill', '#9ca3af').attr('font-size', '12px');
+    xAxisSel.selectAll('line').attr('stroke', '#374151').attr('stroke-opacity', 0.5);
+
+    const priceLine = container.select<SVGPathElement>('.price-line');
+    priceLine
+      .datum(data)
+      .transition(t)
+      .attr('d', lineGenerator);
+
+    const latestCircle = container.select<SVGCircleElement>('.latest-price-point');
+
+    if (!latestCircle.empty()) {
+      latestCircle
+        .transition(t)
+        .attr('cx', scales.xScale(new Date(latestPoint.timestamp)))
+        .attr('cy', scales.yScale(latestPoint.price))
+        .attr('r', 3);
+    }
   }, []);
 
 
