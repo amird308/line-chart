@@ -36,6 +36,33 @@ const Chart: React.FC<ChartProps> = () => {
         style={{ display: priceData.length < 2 ? 'none' : 'block' }}
       />
 
+      {/* Icons */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
+        {[
+          { name: 'BTC', color: 'bg-orange-500' },
+          { name: 'ETH', color: 'bg-gray-600' },
+          { name: 'SOL', color: 'bg-blue-500' }
+        ].map(crypto => (
+          <div 
+            key={crypto.name} 
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${crypto.color} ${
+              symbol.includes(crypto.name) ? 'ring-2 ring-yellow-400' : ''
+            }`}
+          >
+            {crypto.name}
+          </div>
+        ))}
+      </div>
+
+      {/* Data Info */}
+      {priceData.length >= 2 && (
+        <div className="absolute bottom-4 left-6 z-20 text-gray-400 text-sm">
+          <div>Data Points: {priceData.length}</div>
+          <div>Symbol: {symbol}</div>
+        </div>
+      )}
+
+
     </div>
   );
 };
