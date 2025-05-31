@@ -1,12 +1,14 @@
 import { useRef, useEffect, useCallback, useMemo } from 'react';
 import type { PriceData } from './use-data-price';
 import * as d3 from 'd3';
+import type { ChartDimensions } from './use-chart-dimensions';
 interface UseD3ChartProps {
   data: PriceData[];
+  dimensions: ChartDimensions;
 }
 
 
-export function useChart({ data }: UseD3ChartProps) {
+export function useChart({ data, dimensions }: UseD3ChartProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const initializedRef = useRef<boolean>(false);
 
@@ -22,17 +24,17 @@ export function useChart({ data }: UseD3ChartProps) {
       
       const xScale = d3.scaleTime()
         .domain([timeExtent[0], new Date(timeExtent[1].getTime() + timePadding)])
-        .range([0, 1000]);
+        .range([0, dimensions.boundedWidth]);
       
       const yScale = d3.scaleLinear()
         .domain([
           priceExtent[0] - priceRange * 0.1,
           priceExtent[1] + priceRange * 0.1
         ])
-        .range([600, 0]);
+        .range([dimensions.boundedHeight, 0]);
   
       return { xScale, yScale };
-  }, [data]);
+  }, [data, dimensions.boundedWidth, dimensions.boundedHeight]);
 
   const lineGenerator = useMemo(() => {
     if (!scales) return null;
@@ -66,7 +68,7 @@ export function useChart({ data }: UseD3ChartProps) {
     greenGradient.append('stop').attr('offset', '100%').attr('stop-color', '#16a34a').attr('stop-opacity', 0.1);
 
     const container = svg.append('g')
-      .attr('transform', `translate(${80},${60})`);
+    .attr('transform', `translate(${dimensions.margin.left},${dimensions.margin.top})`);
 
     // background zones
     const lastPrice = data[data.length - 1].price;
@@ -74,20 +76,20 @@ export function useChart({ data }: UseD3ChartProps) {
     
     container.append('rect')
       .attr('class', 'red-zone')
-      .attr('width', 1200)
+      .attr('width', dimensions.boundedWidth)
       .attr('height', currentPriceY)
       .attr('fill', 'url(#redZone)');
 
     container.append('rect')
       .attr('class', 'green-zone')
       .attr('y', currentPriceY)
-      .attr('width', 1200)
-      .attr('height', 600 - currentPriceY)
+      .attr('width', dimensions.boundedWidth)
+      .attr('height', dimensions.boundedHeight - currentPriceY)
       .attr('fill', 'url(#greenZone)');
 
     container.append('line')
       .attr('class', 'current-price-line')
-      .attr('x2', 1200)
+      .attr('x2', dimensions.boundedWidth)
       .attr('y1', currentPriceY)
       .attr('y2', currentPriceY)
       .attr('stroke', '#ffffff')
@@ -104,7 +106,7 @@ export function useChart({ data }: UseD3ChartProps) {
       container.append('g')
     )
       .attr('class', 'y-axis')
-      .attr('transform', `translate(${1000}, 0)`)
+      .attr('transform', `translate(${dimensions.boundedWidth}, 0)`)
       .call(yAxisGenerator);
 
     yAxisGroup.selectAll('text').attr('fill', '#9ca3af').attr('font-size', '12px');
@@ -119,7 +121,7 @@ export function useChart({ data }: UseD3ChartProps) {
       container.append('g')
     )
       .attr('class', 'x-axis')
-      .attr('transform', `translate(0, ${600})`)
+      .attr('transform', `translate(0, ${dimensions.boundedHeight})`)
       .call(xAxisGenerator);
 
     xAxisGroup.selectAll('text').attr('fill', '#9ca3af').attr('font-size', '12px');
@@ -135,7 +137,7 @@ export function useChart({ data }: UseD3ChartProps) {
       .attr('stroke-linecap', 'round');
 
     initializedRef.current = true;
-  }, [data]);
+  }, [data, dimensions]);
 
 
   const updateChart = useCallback(() => {
@@ -168,7 +170,7 @@ export function useChart({ data }: UseD3ChartProps) {
     container.select('.green-zone')
       .transition(t)
       .attr('y', currentPriceY)
-      .attr('height', 600 - currentPriceY);
+      .attr('height', dimensions.boundedHeight - currentPriceY);
 
     container.select('.current-price-line')
       .transition(t)
@@ -213,7 +215,7 @@ export function useChart({ data }: UseD3ChartProps) {
         .attr('cy', scales.yScale(latestPoint.price))
         .attr('r', 3);
     }
-  }, [data]);
+  }, [data, dimensions]);
 
 
   useEffect(() => {
