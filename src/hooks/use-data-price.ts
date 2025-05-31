@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 
 export interface PriceData {
@@ -28,20 +28,21 @@ interface UsePriceDataProps {
 interface UsePriceDataReturn {
   priceData: PriceData[];
   currentPrice: number;
-  error: string | null;
   isLoading: boolean;
 }
 
-export function usePriceData({ symbol = 'BTCUSDT' }: UsePriceDataProps = {}): UsePriceDataReturn {
+export function usePriceData({ symbol = 'BTCUSDT' }: UsePriceDataProps): UsePriceDataReturn {
   const [priceData, setPriceData] = useState<PriceData[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
+  const lastPriceRef = useRef<number>(0);
+  const lastUpdateRef = useRef<number>(0);
 
   // history
   const fetchHistoricalData = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
     
     const now = Date.now();
     const oneHourAgo = now - (2 * 60 * 1000);
@@ -66,26 +67,92 @@ export function usePriceData({ symbol = 'BTCUSDT' }: UsePriceDataProps = {}): Us
     if (historicalData.length > 0) {
       const lastPrice = historicalData[historicalData.length - 1].price;
       setCurrentPrice(lastPrice);
-
     }
+    setIsLoading(false);
     
   }, [symbol]);
 
+  // realtime
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.close();
+    }
 
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    try {
+      const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@ticker`);
+
+      ws.onopen = () => {
+        console.log(`WebSocket connected for ${symbol}`);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const price = parseFloat(data.c);
+
+          if (!isNaN(price) && price > 0) {
+            setCurrentPrice(price);
+            lastPriceRef.current = price;
+            setPriceData(prevData => {
+              const newDataPoint: PriceData = {
+                timestamp: Date.now(),
+                price: price
+              };
+              const updatedData = [...prevData, newDataPoint];
+              return updatedData.slice(-600);
+            });
+          }
+        } catch (parseError) {
+          console.error('Error parsing WebSocket message:', parseError);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error(`WebSocket error for ${symbol}:`, error);
+      };
+
+      ws.onclose = (event) => {
+        console.log(`WebSocket disconnected for ${symbol}`, event.code, event.reason);     
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, 2000);
+      };
+
+      wsRef.current = ws;
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error);
+    }
+  }, [symbol]);
+
+  // symbol changes and init
   useEffect(() => {
     setPriceData([]);
     setCurrentPrice(0);
-    setError(null);
     setIsLoading(true);
+    lastPriceRef.current = 0;
+    lastUpdateRef.current = 0;
 
-    fetchHistoricalData();
+    fetchHistoricalData().then(() => {
+      connectWebSocket();
+    });
 
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close(1000);
+      }
+    };
   }, [symbol]);
 
   return {
     priceData,
     currentPrice,
-    error,
     isLoading
   };
 }
