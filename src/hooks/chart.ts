@@ -2,6 +2,7 @@ import { useRef, useEffect, useCallback, useMemo } from 'react';
 import type { PriceData } from './use-data-price';
 import * as d3 from 'd3';
 import type { ChartDimensions } from './use-chart-dimensions';
+import { interpolatePath } from '../utils/interpolate-path';
 interface UseD3ChartProps {
   data: PriceData[];
   dimensions: ChartDimensions;
@@ -137,7 +138,7 @@ export function useChart({ data, dimensions }: UseD3ChartProps) {
       .attr('stroke-linecap', 'round');
 
     initializedRef.current = true;
-  }, [data, dimensions]);
+  }, [data, dimensions, scales]);
 
 
   const updateChart = useCallback(() => {
@@ -204,7 +205,16 @@ export function useChart({ data, dimensions }: UseD3ChartProps) {
     priceLine
       .datum(data)
       .transition(t)
-      .attr('d', lineGenerator);
+      .attrTween('d', function (d) {
+        const previous = d3.select(this).attr('d') || '';
+        const next = lineGenerator(d as PriceData[]) || '';
+        if(!previous || !next) {
+          return d3.interpolateString(previous, next);
+        }
+        const interpolator = interpolatePath(previous, next);
+  
+        return interpolator;
+      });
 
     const latestCircle = container.select<SVGCircleElement>('.latest-price-point');
 
@@ -215,7 +225,7 @@ export function useChart({ data, dimensions }: UseD3ChartProps) {
         .attr('cy', scales.yScale(latestPoint.price))
         .attr('r', 3);
     }
-  }, [data, dimensions]);
+  }, [data, dimensions, scales, lineGenerator]);
 
 
   useEffect(() => {
