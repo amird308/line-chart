@@ -118,13 +118,6 @@ export function usePriceData({ symbol = 'BTCUSDT' }: UsePriceDataProps): UsePric
         console.error(`WebSocket error for ${symbol}:`, error);
       };
 
-      ws.onclose = (event) => {
-        console.log(`WebSocket disconnected for ${symbol}`, event.code, event.reason);     
-        reconnectTimeoutRef.current = setTimeout(() => {
-          connectWebSocket();
-        }, 2000);
-      };
-
       wsRef.current = ws;
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error);
