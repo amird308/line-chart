@@ -135,7 +135,7 @@ export function useChart({ data }: UseD3ChartProps) {
       .attr('stroke-linecap', 'round');
 
     initializedRef.current = true;
-  }, []);
+  }, [data]);
 
 
   const updateChart = useCallback(() => {
@@ -213,7 +213,7 @@ export function useChart({ data }: UseD3ChartProps) {
         .attr('cy', scales.yScale(latestPoint.price))
         .attr('r', 3);
     }
-  }, []);
+  }, [data]);
 
 
   useEffect(() => {
