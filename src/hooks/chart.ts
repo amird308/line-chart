@@ -137,6 +137,15 @@ export function useChart({ data, dimensions }: UseD3ChartProps) {
       .attr('stroke-width', 3)
       .attr('stroke-linecap', 'round');
 
+    container
+    .append('circle')
+    .attr('class', 'latest-price-point')
+    .attr('r', 4)
+    .attr('fill', '#10b981')
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 2);
+
+
     initializedRef.current = true;
   }, [data, dimensions, scales]);
 
