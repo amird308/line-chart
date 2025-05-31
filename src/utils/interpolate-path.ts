@@ -49,12 +49,12 @@ interface ValidationResult {
 class PathInterpolator {
   private readonly include: (PathCommand | number)[];
   private readonly exclude: (PathCommand | number)[];
-  private readonly maxSegmentLength: number;
+  // private readonly maxSegmentLength: number;
 
   constructor(options: InterpolatorOptions = {}) {
     this.include = options.include || [];
     this.exclude = options.exclude || [];
-    this.maxSegmentLength = options.maxSegmentLength || 10;
+    // this.maxSegmentLength = options.maxSegmentLength || 10;
   }
 
   /**
