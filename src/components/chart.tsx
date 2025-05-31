@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePriceData } from '../hooks/use-data-price';
 import { useChart } from '../hooks/chart';
+import { useChartDimensions } from '../hooks/use-chart-dimensions';
 
 interface ChartProps {
   symbol?: string;
@@ -15,8 +16,19 @@ const Chart: React.FC<ChartProps> = () => {
   
   const { priceData, isLoading } = usePriceData({ symbol });
 
+  const dimensions = useChartDimensions({
+    width,
+    height,
+    marginTop: 60,
+    marginRight: 120,
+    marginBottom: 80,
+    marginLeft: 80,
+  });
+
+
   const svgRef = useChart({
     data: priceData,
+    dimensions
   });
 
   return (
