@@ -1,5 +1,6 @@
 import React from 'react';
 import { usePriceData } from '../hooks/use-data-price';
+import { useChart } from '../hooks/chart';
 
 interface ChartProps {
   symbol?: string;
@@ -11,8 +12,12 @@ const Chart: React.FC<ChartProps> = () => {
   const symbol = 'BTCUSDT'; 
   const width = 1200;
   const height = 600;
+  
   const { priceData, isLoading } = usePriceData({ symbol });
-  console.log(priceData)
+
+  const svgRef = useChart({
+    data: priceData,
+  });
 
   return (
     <div className="relative bg-gray-900 rounded-lg overflow-hidden">
@@ -30,6 +35,7 @@ const Chart: React.FC<ChartProps> = () => {
 
       {/* Chart SVG */}
       <svg 
+         ref={svgRef} 
         width={width} 
         height={height} 
         className="bg-transparent"
