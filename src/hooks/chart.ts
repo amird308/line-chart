@@ -52,6 +52,8 @@ export function useChart({ data, dimensions }: UseD3ChartProps) {
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
+    const latestPoint = data[data.length - 1];
+
     const defs = svg.append('defs');
     
     const redGradient = defs.append('linearGradient')
@@ -141,6 +143,8 @@ export function useChart({ data, dimensions }: UseD3ChartProps) {
     .append('circle')
     .attr('class', 'latest-price-point')
     .attr('r', 4)
+    .attr('cx', scales.xScale(new Date(latestPoint.timestamp)))
+    .attr('cy', scales.yScale(latestPoint.price))
     .attr('fill', '#10b981')
     .attr('stroke', '#fff')
     .attr('stroke-width', 2);

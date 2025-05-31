@@ -4,13 +4,12 @@ import { useChart } from '../hooks/chart';
 import { useChartDimensions } from '../hooks/use-chart-dimensions';
 
 interface ChartProps {
-  symbol?: string;
+  symbol: string;
   width?: number;
   height?: number;
 }
 
-const Chart: React.FC<ChartProps> = () => {
-  const symbol = 'BTCUSDT'; 
+const Chart: React.FC<ChartProps> = ({ symbol }) => {
   const width = 1200;
   const height = 600;
   
@@ -53,24 +52,6 @@ const Chart: React.FC<ChartProps> = () => {
         className="bg-transparent"
         style={{ display: priceData.length < 2 ? 'none' : 'block' }}
       />
-
-      {/* Icons */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
-        {[
-          { name: 'BTC', color: 'bg-orange-500' },
-          { name: 'ETH', color: 'bg-gray-600' },
-          { name: 'SOL', color: 'bg-blue-500' }
-        ].map(crypto => (
-          <div 
-            key={crypto.name} 
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${crypto.color} ${
-              symbol.includes(crypto.name) ? 'ring-2 ring-yellow-400' : ''
-            }`}
-          >
-            {crypto.name}
-          </div>
-        ))}
-      </div>
 
       {/* Data Info */}
       {priceData.length >= 2 && (
